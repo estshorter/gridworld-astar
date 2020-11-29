@@ -77,7 +77,8 @@ namespace GridGraph {
 			int posY = (idx - posX) / mSizeX;
 			mWalls.insert({ posX, posY });
 		}
-		void AddWall(const Location&& u) {
+
+		void AddWall(const Location& u) {
 			mWalls.insert(u);
 		}
 
@@ -171,7 +172,7 @@ namespace GridGraph {
 		GridGraph3d(const int sizeX, const int sizeY, const int sizeZ) : mSizeX(sizeX), mSizeY(sizeY), mSizeZ(sizeZ) {
 		}
 
-		std::vector<Location> GetNeighbors(const Location u) const {
+		std::vector<Location> GetNeighbors(const Location& u) const {
 			std::vector<Location> results;
 
 			for (Location dir : DIRS) {
@@ -192,9 +193,6 @@ namespace GridGraph {
 			int posX = idx % mSizeX;
 			int posY = (idx - posX) / mSizeX;
 			mHeightMap[{posX, posY}] = height;
-		}
-		void AddHeight(const Location2D u, const uint8_t height) {
-			mHeightMap[u] = height;
 		}
 
 		// ‚¢‚µ‚Ì‚È‚©‚É‚¢‚é
