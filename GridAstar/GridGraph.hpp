@@ -7,10 +7,9 @@
 #include <vector>
 #include <iterator>
 #include <iostream>
-#include <stack>
+#include <queue>
 
 #include "misc.hpp"
-
 
 namespace GridGraph {
 	template <class Location>
@@ -31,10 +30,10 @@ namespace GridGraph {
 			Location{0, -1}, Location{0, 1}
 		};
 
-		GridGraph2d(int sizeX, int sizeY) : mSizeX(sizeX), mSizeY(sizeY) {
+		GridGraph2d(const int sizeX, const int sizeY) : mSizeX(sizeX), mSizeY(sizeY) {
 		}
 
-		std::vector<Location> GetNeighbors(Location& u) const {
+		std::vector<Location> GetNeighbors(const Location& u) const {
 			std::vector<Location> results;
 
 			for (Location dir : DIRS) {
@@ -51,42 +50,34 @@ namespace GridGraph {
 			return results;
 		};
 
-		std::vector<Location> GetNthNeighbors(Location& u, int max_depth) const {
-			std::unordered_map<Location, int,  pair_hash> depth_min;
-			std::stack<std::pair<Location, int>> stack; // location and depth
+		std::vector<Location> GetNthNeighbors(const Location& u, const int max_depth) const {
+			std::unordered_set<Location, pair_hash> visited;
+			std::queue<std::pair<Location, int>> queue; // location and depth
 			std::vector<Location> nNeighbors;
 
-			stack.push({ u, 0 });
-			while (!stack.empty()) {
-				auto [current, depth]  = stack.top();
-				stack.pop();
+			queue.push({ u, 0 });
+			while (!queue.empty()) {
+				auto [current, depth] = queue.front();
+				queue.pop();
 
-				depth_min[current] = depth;
+				visited.insert(current);
 				nNeighbors.push_back(current);
-				auto depth_next = depth+1;
+				auto depth_next = depth + 1;
 				for (Location next : GetNeighbors(current)) {
-					if (!InBounds(next) || !Passable(next))
-						continue;
-					if (depth_min.find(next) == depth_min.end()) { // まだ訪問していないノード
-						if (depth_next <= max_depth)
-							stack.push({ next, depth_next });
-						continue;
-					}
-
-					if (depth_next < depth_min[next]){
-						stack.push({ next, depth_next });
+					if (visited.find(next) == visited.end() && depth_next <= max_depth) {
+						queue.push({ next, depth_next });
 					}
 				}
 			}
 			return nNeighbors;
 		};
 
-		void AddWall(int idx) {
+		void AddWall(const int idx) {
 			int posX = idx % mSizeX;
 			int posY = (idx - posX) / mSizeX;
 			mWalls.insert({ posX, posY });
 		}
-		void AddWall(Location&& u) {
+		void AddWall(const Location&& u) {
 			mWalls.insert(u);
 		}
 
@@ -129,7 +120,7 @@ namespace GridGraph {
 					else if (u == goal) {
 						std::cout << " Z ";
 					}
-					else if (find(path.begin(), path.end(), u) != path.end()){
+					else if (find(path.begin(), path.end(), u) != path.end()) {
 						std::cout << " @ ";
 					}
 					else {
@@ -140,7 +131,6 @@ namespace GridGraph {
 			}
 			std::cout << std::string(field_width * mSizeX, '~') << '\n';
 		}
-
 
 		int GetSizeX()const {
 			return mSizeX;
@@ -158,13 +148,12 @@ namespace GridGraph {
 		int mSizeX; //width
 		int mSizeY; //height
 
-
-		bool InBounds(const Location &u) const {
+		bool InBounds(const Location& u) const {
 			return 0 <= u.first && u.first < mSizeX
 				&& 0 <= u.second && u.second < mSizeY;
 		}
 
-		bool Passable(const Location &u) const {
+		bool Passable(const Location& u) const {
 			return mWalls.find(u) == mWalls.end();
 		}
 	};
@@ -179,10 +168,10 @@ namespace GridGraph {
 			Location{0, 0,1},Location{0, 0,-1}
 		};
 
-		GridGraph3d(int sizeX, int sizeY, int sizeZ) : mSizeX(sizeX), mSizeY(sizeY), mSizeZ(sizeZ) {
+		GridGraph3d(const int sizeX, const int sizeY, const int sizeZ) : mSizeX(sizeX), mSizeY(sizeY), mSizeZ(sizeZ) {
 		}
 
-		std::vector<Location> GetNeighbors(Location u) const {
+		std::vector<Location> GetNeighbors(const Location u) const {
 			std::vector<Location> results;
 
 			for (Location dir : DIRS) {
@@ -199,67 +188,59 @@ namespace GridGraph {
 			return results;
 		};
 
-		void AddHeight(int idx, uint8_t height) {
+		void AddHeight(const int idx, const uint8_t height) {
 			int posX = idx % mSizeX;
 			int posY = (idx - posX) / mSizeX;
 			mHeightMap[{posX, posY}] = height;
 		}
-		void AddHeight(Location2D u, uint8_t height) {
+		void AddHeight(const Location2D u, const uint8_t height) {
 			mHeightMap[u] = height;
 		}
 
 		// いしのなかにいる
-		bool InObstacle(Location& u) {
+		bool InObstacle(const Location& u) const {
 			Location2D posXY = { std::get<0>(u), std::get<1>(u) };
 			if (mHeightMap.find(posXY) == mHeightMap.end())
 				return false;
 
-			if (mHeightMap[posXY] >= std::get<2>(u)) {
+			if (mHeightMap.at(posXY) >= std::get<2>(u)) {
 				return true;
 			}
 			return false;
 		}
-		const std::unordered_map<Location2D, uint8_t, pair_hash>& GetHeight() const{
+		const std::unordered_map<Location2D, uint8_t, pair_hash>& GetHeight() const {
 			return mHeightMap;
 		}
 
-		std::vector<Location> GetNthNeighbors(Location& u, int max_depth) const {
-			std::unordered_map<Location, int, triple_tuple_hash> depth_min;
-			std::stack<std::pair<Location, int>> stack; // location and depth
+		std::vector<Location> GetNthNeighbors(const Location& u, const int max_depth) const {
+			std::unordered_set<Location, triple_tuple_hash> visited;
+			std::queue<std::pair<Location, int>> queue; // location and depth
 			std::vector<Location> nNeighbors;
 
-			stack.push({ u, 0 });
-			while (!stack.empty()) {
-				auto [current, depth] = stack.top();
-				stack.pop();
+			queue.push({ u, 0 });
+			while (!queue.empty()) {
+				auto [current, depth] = queue.front();
+				queue.pop();
 
-				depth_min[current] = depth;
+				visited.insert(current);
 				nNeighbors.push_back(current);
 				auto depth_next = depth + 1;
 				for (Location next : GetNeighbors(current)) {
-					if (!InBounds(next) || !Passable(next))
-						continue;
-					if (depth_min.find(next) == depth_min.end()) { // まだ訪問していないノード
-						if (depth_next <= max_depth)
-							stack.push({ next, depth_next });
-						continue;
-					}
-
-					if (depth_next < depth_min[next]) {
-						stack.push({ next, depth_next });
+					if (visited.find(next) == visited.end() && depth_next <= max_depth) {
+						queue.push({ next, depth_next });
 					}
 				}
 			}
 			return nNeighbors;
 		};
 
+
 	private:
-		// heightが0は地面（impassable）として仮定する。
+		// height0は地面（impassable）として仮定する。
 		std::unordered_map<Location2D, uint8_t, pair_hash> mHeightMap;
 		int mSizeX; //width
 		int mSizeY; //height
 		int mSizeZ; //depth
-
 
 		bool InBounds(const Location& u) const {
 			return 0 <= std::get<0>(u) && std::get<0>(u) < mSizeX
@@ -267,16 +248,13 @@ namespace GridGraph {
 				&& 0 <= std::get<2>(u) && std::get<2>(u) < mSizeZ;
 		}
 
-		bool Passable(Location& v) const {
+		bool Passable(const Location& v) const {
 			Location2D posXY = { std::get<0>(v), std::get<1>(v) };
 			int posZ = std::get<2>(v);
-			if (mHeightMap.find(posXY) == mHeightMap.end())
-				return true;
-			if (mHeightMap.at(posXY) >= posZ) {
+			if (mHeightMap.find(posXY) != mHeightMap.end() && mHeightMap.at(posXY) >= posZ) {
 				return false;
 			}
 			return true;
 		}
-
 	};
 }
