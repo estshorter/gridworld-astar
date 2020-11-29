@@ -7,6 +7,7 @@
 #include <vector>
 #include <iterator>
 #include <iostream>
+#include <stack>
 
 #include "misc.hpp"
 
@@ -50,10 +51,40 @@ namespace GridGraph {
 			return results;
 		};
 
+		std::vector<Location> GetNthNeighbors(Location& u, int max_depth) const {
+			std::unordered_map<Location, int,  pair_hash> depth_min;
+			std::stack<std::pair<Location, int>> stack; // location and depth
+			std::vector<Location> nNeighbors;
+
+			stack.push({ u, 0 });
+			while (!stack.empty()) {
+				auto [current, depth]  = stack.top();
+				stack.pop();
+
+				depth_min[current] = depth;
+				nNeighbors.push_back(current);
+				auto depth_next = depth+1;
+				for (Location next : GetNeighbors(current)) {
+					if (!InBounds(next) || !Passable(next))
+						continue;
+					if (depth_min.find(next) == depth_min.end()) { // まだ訪問していないノード
+						if (depth_next <= max_depth)
+							stack.push({ next, depth_next });
+						continue;
+					}
+
+					if (depth_next < depth_min[next]){
+						stack.push({ next, depth_next });
+					}
+				}
+			}
+			return nNeighbors;
+		};
+
 		void AddWall(int idx) {
 			int posX = idx % mSizeX;
 			int posY = (idx - posX) / mSizeX;
-			mWalls.insert(std::make_pair(posX, posY));
+			mWalls.insert({ posX, posY });
 		}
 		void AddWall(Location&& u) {
 			mWalls.insert(u);
@@ -156,7 +187,7 @@ namespace GridGraph {
 
 			for (Location dir : DIRS) {
 				Location next{ std::get<0>(u) + std::get<0>(dir), std::get<1>(u) + std::get<1>(dir), std::get<2>(u) + std::get<2>(dir) };
-				if (InBounds(next) && Passable(u, next)) {
+				if (InBounds(next) && Passable(next)) {
 					results.push_back(next);
 				}
 			}
@@ -171,7 +202,7 @@ namespace GridGraph {
 		void AddHeight(int idx, uint8_t height) {
 			int posX = idx % mSizeX;
 			int posY = (idx - posX) / mSizeX;
-			mHeightMap[std::make_pair(posX, posY)] = height;
+			mHeightMap[{posX, posY}] = height;
 		}
 		void AddHeight(Location2D u, uint8_t height) {
 			mHeightMap[u] = height;
@@ -179,7 +210,7 @@ namespace GridGraph {
 
 		// いしのなかにいる
 		bool InObstacle(Location& u) {
-			Location2D posXY = std::make_pair(std::get<0>(u), std::get<1>(u));
+			Location2D posXY = { std::get<0>(u), std::get<1>(u) };
 			if (mHeightMap.find(posXY) == mHeightMap.end())
 				return false;
 
@@ -191,6 +222,36 @@ namespace GridGraph {
 		const std::unordered_map<Location2D, uint8_t, pair_hash>& GetHeight() const{
 			return mHeightMap;
 		}
+
+		std::vector<Location> GetNthNeighbors(Location& u, int max_depth) const {
+			std::unordered_map<Location, int, triple_tuple_hash> depth_min;
+			std::stack<std::pair<Location, int>> stack; // location and depth
+			std::vector<Location> nNeighbors;
+
+			stack.push({ u, 0 });
+			while (!stack.empty()) {
+				auto [current, depth] = stack.top();
+				stack.pop();
+
+				depth_min[current] = depth;
+				nNeighbors.push_back(current);
+				auto depth_next = depth + 1;
+				for (Location next : GetNeighbors(current)) {
+					if (!InBounds(next) || !Passable(next))
+						continue;
+					if (depth_min.find(next) == depth_min.end()) { // まだ訪問していないノード
+						if (depth_next <= max_depth)
+							stack.push({ next, depth_next });
+						continue;
+					}
+
+					if (depth_next < depth_min[next]) {
+						stack.push({ next, depth_next });
+					}
+				}
+			}
+			return nNeighbors;
+		};
 
 	private:
 		// heightが0は地面（impassable）として仮定する。
@@ -206,26 +267,12 @@ namespace GridGraph {
 				&& 0 <= std::get<2>(u) && std::get<2>(u) < mSizeZ;
 		}
 
-		bool Passable(Location& u, Location& v) const {
-			Location2D toXY = std::make_pair(std::get<0>(v), std::get<1>(v));
-			Location2D fromXY = std::make_pair(std::get<0>(u), std::get<1>(u));
-			int toZ = std::get<2>(v);
-			int fromZ = std::get<2>(u);
-
-			if (mHeightMap.find(toXY) == mHeightMap.end())
+		bool Passable(Location& v) const {
+			Location2D posXY = { std::get<0>(v), std::get<1>(v) };
+			int posZ = std::get<2>(v);
+			if (mHeightMap.find(posXY) == mHeightMap.end())
 				return true;
-
-			
-			if (fromXY == toXY) {
-				//+Z方向には常に進める
-				if (fromZ < toZ)
-					return true;
-				//-Z方向の移動にはmapを考慮する
-				if (toZ <= mHeightMap.at(toXY))
-					return false;
-			}
-
-			if (mHeightMap.at(toXY) >= fromZ) {
+			if (mHeightMap.at(posXY) >= posZ) {
 				return false;
 			}
 			return true;

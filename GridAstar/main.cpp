@@ -155,7 +155,88 @@ void Grid3D() {
 
 }
 
+void GetGetNthNeighrbors2D(int max_depth) {
+	constexpr int width = 20;
+	constexpr int height = 10;
+	auto graph = GridGraph2d(width, height);
+	for (int i = 2; i < height - 2; i++) {
+		graph.AddWall(GridGraph2d::Location(10, i));
+	}
+	for (int i = 3; i < 10; i++) {
+		graph.AddWall(GridGraph2d::Location(i, 2));
+		graph.AddWall(GridGraph2d::Location(i, 7));
+	}
+
+	auto start = GridGraph2d::Location(5, 5);
+	auto goal = GridGraph2d::Location(18, 5);
+
+	auto neighbors = graph.GetNthNeighbors(start, max_depth);
+
+
+	graph.Draw(start, goal, neighbors);
+}
+
+void GetGetNthNeighrbors3D(int max_depth) {
+	std::ifstream i("config.json");
+	json config;
+	i >> config;
+	int cellSize = config["cellSize"];
+	std::cout << config.dump() << std::endl;
+
+	std::string filename = "map.bin";
+	std::ifstream fin(filename, std::ios::in | std::ios::binary);
+	if (!fin) {
+		throw std::runtime_error("cannot open a map file");
+	}
+	std::vector<unsigned char> height_map(cellSize * cellSize);
+	fin.read((char*)height_map.data(), height_map.size());
+	fin.close();  //ƒtƒ@ƒCƒ‹‚ð•Â‚¶‚é
+
+	int cnt = 1;
+	for (auto& data : height_map) {
+		std::cout << format("%02d ", +data);
+		cnt++;
+		if (cnt % cellSize == 0) {
+			std::cout << std::endl;
+		}
+	}
+	std::cout << std::endl;
+
+	int max_height = *std::max_element(height_map.begin(), height_map.end());
+
+	auto graph = GridGraph3d(cellSize, cellSize, max_height + 1);
+
+	auto start = GridGraph3d::Location(1, 1, 9);
+	auto goal = GridGraph3d::Location(50, 50, 1);
+	for (int idx = 0; idx < cellSize * cellSize; idx++) {
+		graph.AddHeight(idx, height_map[idx]);
+	}
+
+	if (graph.InObstacle(start)) {
+		throw std::runtime_error("In obstacle at start");
+	}
+	if (graph.InObstacle(goal)) {
+		throw std::runtime_error("In obstacle at goal");
+	}
+	using Location = GridGraph3d::Location;
+	auto neighbors = graph.GetNthNeighbors(start, max_depth);
+
+	json neighbors_json;
+	for (auto& pos : neighbors) {
+		auto [x, y, z] = pos;
+		neighbors_json.push_back(std::array<int, 3> { x, y, z });
+	}
+
+	std::cout << neighbors_json << std::endl;
+	std::ofstream o("neighbors.json");
+	o << neighbors_json << std::endl;
+
+}
+
 int main(void) {
+	Grid2D();
 	//GridPseudo3D();
-	Grid3D();
+	//Grid3D();
+	//GetGetNthNeighrbors2D();
+	//GetGetNthNeighrbors3D(6);
 }
