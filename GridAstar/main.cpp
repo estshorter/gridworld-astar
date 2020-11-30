@@ -15,11 +15,11 @@ using namespace GridGraph;
 using namespace AStars;
 
 template <typename ... Args>
-std::string format(const std::string& fmt, Args ... args)
+std::string format(const std::string& fmt, Args&& ... args)
 {
-	size_t len = std::snprintf(nullptr, 0, fmt.c_str(), args ...);
+	size_t len = std::snprintf(nullptr, 0, fmt.c_str(), std::forward<Args>(args) ...);
 	std::vector<char> buf(len + 1);
-	std::snprintf(&buf[0], len + 1, fmt.c_str(), args ...);
+	std::snprintf(&buf[0], len + 1, fmt.c_str(), std::forward<Args>(args) ...);
 	return std::string(&buf[0], &buf[0] + len);
 }
 
@@ -132,11 +132,22 @@ void Grid3D() {
 	}
 
 	if (graph.InObstacle(start)) {
-		throw std::runtime_error("In obstacle at start");
+		std::cout << "In obstacle at the start" << std::endl;
+		return;
+	}
+	if (graph.InBounds(start)) {
+		std::cout << "Out of bounds at the start" << std::endl;
+		return;
 	}
 	if (graph.InObstacle(goal)) {
-		throw std::runtime_error("In obstacle at goal");
+		std::cout << "In obstacle at the goal" << std::endl;
+		return;
 	}
+	if (graph.InBounds(goal)) {
+		std::cout << "Out of bounds at the goal" << std::endl;
+		return;
+	}
+
 	using Location = GridGraph3d::Location;
 	auto [path, cost] = AStar<int, triple_tuple_hash>(graph, start, goal, L1NormInt3D<Location>, L1NormInt3D<Location>);
 
@@ -213,11 +224,22 @@ void GetGetNthNeighrbors3D(int max_depth) {
 	}
 
 	if (graph.InObstacle(start)) {
-		throw std::runtime_error("In obstacle at start");
+		std::cout << "In obstacle at the start" << std::endl;
+		return;
+	}
+	if (graph.InBounds(start)) {
+		std::cout << "Out of bounds at the start" << std::endl;
+		return;
 	}
 	if (graph.InObstacle(goal)) {
-		throw std::runtime_error("In obstacle at goal");
+		std::cout << "In obstacle at the goal" << std::endl;
+		return;
 	}
+	if (graph.InBounds(goal)) {
+		std::cout << "Out of bounds at the goal" << std::endl;
+		return;
+	}
+
 	using Location = GridGraph3d::Location;
 	auto neighbors = graph.GetNthNeighbors(start, max_depth);
 
@@ -237,6 +259,6 @@ int main(void) {
 	Grid2D();
 	//GridPseudo3D();
 	//Grid3D();
-	//GetGetNthNeighrbors2D();
-	//GetGetNthNeighrbors3D(6);
+	GetGetNthNeighrbors2D(6);
+	//GetGetNthNeighrbors3D(3);
 }

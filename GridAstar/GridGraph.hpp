@@ -144,11 +144,6 @@ namespace GridGraph {
 			return mWalls;
 		}
 
-	private:
-		std::unordered_set<Location, pair_hash> mWalls;
-		int mSizeX; //width
-		int mSizeY; //height
-
 		bool InBounds(const Location& u) const {
 			return 0 <= u.first && u.first < mSizeX
 				&& 0 <= u.second && u.second < mSizeY;
@@ -157,6 +152,12 @@ namespace GridGraph {
 		bool Passable(const Location& u) const {
 			return mWalls.find(u) == mWalls.end();
 		}
+
+	private:
+		std::unordered_set<Location, pair_hash> mWalls;
+		int mSizeX; //width
+		int mSizeY; //height
+
 	};
 
 	class GridGraph3d {
@@ -232,20 +233,6 @@ namespace GridGraph {
 			return nNeighbors;
 		};
 
-
-	private:
-		// height0は地面（impassable）として仮定する。
-		std::unordered_map<Location2D, uint8_t, pair_hash> mHeightMap;
-		int mSizeX; //width
-		int mSizeY; //height
-		int mSizeZ; //depth
-
-		bool InBounds(const Location& u) const {
-			return 0 <= std::get<0>(u) && std::get<0>(u) < mSizeX
-				&& 0 <= std::get<1>(u) && std::get<1>(u) < mSizeY
-				&& 0 <= std::get<2>(u) && std::get<2>(u) < mSizeZ;
-		}
-
 		bool Passable(const Location& v) const {
 			Location2D posXY = { std::get<0>(v), std::get<1>(v) };
 			int posZ = std::get<2>(v);
@@ -254,5 +241,17 @@ namespace GridGraph {
 			}
 			return true;
 		}
+
+		bool InBounds(const Location& u) const {
+			return 0 <= std::get<0>(u) && std::get<0>(u) < mSizeX
+				&& 0 <= std::get<1>(u) && std::get<1>(u) < mSizeY
+				&& 0 <= std::get<2>(u) && std::get<2>(u) < mSizeZ;
+		}
+	private:
+		// height0は地面（impassable）として仮定する。
+		std::unordered_map<Location2D, uint8_t, pair_hash> mHeightMap;
+		int mSizeX; //width
+		int mSizeY; //height
+		int mSizeZ; //depth
 	};
 }
